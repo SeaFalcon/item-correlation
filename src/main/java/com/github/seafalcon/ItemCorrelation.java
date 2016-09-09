@@ -57,8 +57,8 @@ public class ItemCorrelation {
         */
 
         double result = 0.0;
-        double offensiveToHpOtherDefenseWeight  = 2.0/3.0;
-        double offensiveToHpSameDefenseWeight = offensiveToHpOtherDefenseWeight  * 2;
+        double offensiveToHpOtherDefenseWeight = 0.33 / 0.5;
+        double offensiveToHpSameDefenseWeight = 0.67 / 0.5;
 
         if(a.getMagicalOffensive() > 0){
             if(b.getMagicalOffensive() > 0 || b.getPhysicalOffensive() > 0) {
