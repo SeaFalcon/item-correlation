@@ -1,11 +1,6 @@
 package com.github.seafalcon;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ItemCorrelation {
-
-    public static final int FACTOR_SIZE = 5;
 
     public static double compute(Item a, Item b) {
         /*
@@ -23,162 +18,150 @@ public class ItemCorrelation {
             DP 100 <> DP 100 상관관계 서로 1
             DP 100 <> DP 60, MR 60 상관관계 서로 1
 
-            비교결과 수치는 관계없고 속성차이로 상관관계가 결정되는 것 같음
-            그리고 테스트 케이스에서 상관관계의 경우의 수는
-            0, 0.33, 0.5, 0.67, 1 이렇게 총 5가지가 나온다. (상수 FACTOR_SIZE = 5)
+            테스트 케이스에서 알 수 있는 것은
+            - 수치보다는 속성차이로 상관관계가 결정되는 것 같다
+            - 마법공격과 물리방어처럼 속성이 다른 공격/방어 수치는 상관관계가 0이다.
+            - 반대로 속성이 같은 공격/방어 수치는 상관관계가 1이다.
+            - 체력이 단독으로 붙은 아이템은 공격 수치와 0.5의 상관관계를 가지고 있다.
+            - 그러나 체력 수치에 방어력이 추가되면 차이가 생긴다.
+            - 마법공격-마법방어 아이템에서 방어아이템에 체력이 붙으면 상관관계가 0.67이 된다. (반대의 경우도 동일하게 추정)
+            - 마법공격-물리방어 아이템에서 방어아이템에 체력이 붙으면 상관관계가 0.33이 된다. (반대의 경우도 동일하 추정)
+            - 공격은 물리/마법 속성이 같거나 달라도 상관관계가 1이다. (다른 수치에 영향받지 않는다.)
+            - 같은 속성끼리는 상관관계가 1이다.
+            - 방어 아이템도 물리나 마법에 상관없이 상관관계가 1이다.
 
-            magicOffense 와 hp의 상관관계 0.5
-            magicOffense 와 physicalDefense의 상관관계 0
-            위 두가지 경우를 제외하고 테스트 케이스 상의 모든 상관관계가 1
-            (
-                physicalOffensive <> hp
-                physicalOffensive <> magicalDefensive
-                magicalDefensive <> magicalDefensive
-                단, 이 세가지 경우에 대해서는
-                테스트 케이스에서 상관관계를 알 수 없기 때문에 2로 처리했다
-             )
+            복합적인 옵션을 가지고 있는 아이템을 비교하는 과정에서
+            AP 120 <> HP 500, MR 50 상관관계는 0.67
+            AP 70 <> HP 500, DP 50 사이의 상관관계는 0.33
 
-            그리고 테스트 케이스에서 두 가지 이상 값을 비교하는 경우에는
-            예를들어 a.hp와 b.physicalDefensive, b.hp를 비교할때
-            a.hp <> b.physicalDefensive의 상관관계는 1
-            a.hp <> b.hp의 상관관계는 1
-            따라서 두 상관관계를 더해서 비교한 경우의 수만큼 나눠주면 테스트 케이스의 값 1이 나온다
+            공격력과 체력은 0.5의 상관관계가 있다.
+            마법공격력과 체력사이에서 물리방어/마법방어 옵션이 추가될때 상관관계가 변화되므로
+            마법방어 / 물리방어에 따른 가중치를 부여했다
 
-            이런식으로 계산했을 때 0은 0이고 0.5는 0.5 그리고 1은 1이 맞지만
-            그러나 테스트 케이스의 값이 0.33과 0.67이 나오는 경우에서 문제가 생긴다
-            위의 계산법대로 하면 0.33은 0.25가 나오고 0.67은 0.75가 나오기 때문이다.
+            offensiveToHpSameDefenseWeight, offensiveToHpOtherDefenseWeight 변수를 선언하여
+            0.5 * offensiveToHpSameDefenseWeight = 0.67
+            0.5 * offensiveToHpOtherDefenseWeight = 0.33
+            위 결과가 나오도록 각각의 변수에 값을 대입했다.
 
-            그래서
-            a.magicalOffensive와 b.hp, b.physicalDefensive를 비교할때
-            a.magicalOffensive <> b.hp 의 상관관계는 0.5
-            a.magicalOffensive <> b.physicalDefensive의 상관관계는 0
-            이 경우에 0.5 + 0 / 2를 할 경우 0.25가 나오는데 이 값을 0.33으로 치환하는 방향으로 진행했다.
-
-            우선 List<Double> correlations 리스트를 선언하고
-            0번째 index에는 Item a의 값을 대입하고 1번째 index에는 Item b의 값을 대입한다
-            리스트를 선언한 이유는 테스트에서 상관관계를 몇 번 비교하는지 갯수를 알기 위함이다.
-
-            그리고 조건문에서는 a의 값을 하나하나 불러와서 0이상인지 여부를 파악한다.
+            아래 조건문에서는 a의 값을 하나하나 불러와서 0이상인지 여부를 파악한다.
             0 보다 크면 비교하기 위한 값이 있는 경우이기 때문에 b의 모든 값과 비교를 하게된다.
             0 보다 크지 않으면 비교하지 않고 그냥 넘어가게 된다.
-            그렇게 하나하나씩 비교를 했을 경우 리스트에 상관관계 값을 하나씩 집어넣게 된다.
+            그리고 테스트 케이스에서 발견한 조건들을 활용하여 상관관계를 분석한다
+            우선적으로 서로 같은 속성이면 1을 반환하고 만약 공격속성을 비교할 경우에는 속성이 달라도 1을 반환시킨다
+            다른 속성일 경우 상관관계가 1이나 0이 나오는 수치들은 그대로 반환시키고
+            복합옵션을 가지고 있는 아이템에는 가중치를 넣어 반환시킨다.
 
-            마지막으로 함수에서 반환 할 double형 result 변수를 선언하고
-            correlations 리스트에서 값을 추출하여 더한 값을 result에 넣는다.
-            그리고 result의 값을 correlations 리스트의 길이만큼 나눠준다.
+            마지막으로 소수점 둘째자리 까지 표기하기 위해 String.format함수를 사용하여 반환했다.
 
-            이렇게하면 result의 값은 0, 0.25, 0.5, 0,75, 1의 다섯가지 경우의 수가 나오게 된다.
-            마지막으로 0.25, 0.75인 경우 치환하기 위해 조건문을 넣었다
-            다른 세가지의 경우는 result를 그대로 반환하고
-            0.25는
-            1을 FACTOR_SIZE 5에서 correlations 리스트의 길이만큼 빼준 값으로 나눈다.
-            0.75는 1에서 0.25의 결과를 뺀다.
-            그리고 소수점 2째자리 까지 표기하기 위해 String.format함수를 사용했다.
-            그렇게 하면 각각 0.33과 0.67이 나오게 된다.
 
         */
 
-        List<Double> correlations = new ArrayList<Double>();
+        double result = 0.0;
+        double offensiveToHpOtherDefenseWeight  = 2.0/3.0;
+        double offensiveToHpSameDefenseWeight = offensiveToHpOtherDefenseWeight  * 2;
 
         if(a.getMagicalOffensive() > 0){
-            if(b.getMagicalOffensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getPhysicalOffensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getHp() > 0){
-                correlations.add(0.5);
-            }
-            if(b.getPhysicalDefensive() > 0){
-                correlations.add(0.0);
-            }
-            if(b.getMagicalDefensive() > 0){
-                correlations.add(1.0);
+            if(b.getMagicalOffensive() > 0 || b.getPhysicalOffensive() > 0) {
+                result = 1.0;
+            }else{
+                if (b.getHp() > 0){
+                    result = 0.5;
+                    if (b.getPhysicalDefensive() > 0) {
+                        result = 0.5 * offensiveToHpOtherDefenseWeight;
+                    }
+                    if (b.getMagicalDefensive() > 0) {
+                        result = 0.5 * offensiveToHpSameDefenseWeight;
+                    }
+                }else {
+                    if (b.getPhysicalDefensive() > 0) {
+                        result = 0.0;
+                    }
+                    if (b.getMagicalDefensive() > 0) {
+                        result = 1.0;
+                    }
+                }
             }
         }
         if(a.getPhysicalOffensive() > 0){
-            if(b.getMagicalOffensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getPhysicalOffensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getHp() > 0){
-                correlations.add(2.0);
-            }
-            if(b.getPhysicalDefensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getMagicalDefensive() > 0){
-                correlations.add(2.0);
+            if(b.getPhysicalOffensive() > 0 || b.getMagicalOffensive() > 0){
+                result = 1.0;
+            }else{
+                if (b.getHp() > 0) {
+                    result = 0.0;
+                    if (b.getPhysicalDefensive() > 0) {
+                        result = 0.5 * offensiveToHpSameDefenseWeight;
+                    }
+                    if (b.getMagicalDefensive() > 0) {
+                        result = 0.5 * offensiveToHpOtherDefenseWeight;
+                    }
+                }else {
+                    if (b.getPhysicalDefensive() > 0) {
+                        result = 1.0;
+                    }
+                    if (b.getMagicalDefensive() > 0) {
+                        result = 0.0;
+                    }
+                }
             }
         }
         if(a.getHp() > 0){
-            if(b.getMagicalOffensive() > 0){
-                correlations.add(0.5);
-            }
-            if(b.getPhysicalOffensive() > 0){
-                correlations.add(2.0);
-            }
             if(b.getHp() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getPhysicalDefensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getMagicalDefensive() > 0){
-                correlations.add(2.0);
+                result = 1.0;
+            }else{
+                if (b.getMagicalOffensive() > 0) {
+                    result = 0.5;
+                }
+                if (b.getPhysicalOffensive() > 0) {
+                    result = 0.5;
+                }
+                if (b.getPhysicalDefensive() > 0 || b.getMagicalDefensive() > 0) {
+                    result = 1.0;
+                }
             }
         }
         if(a.getPhysicalDefensive() > 0){
-            if(b.getMagicalOffensive() > 0){
-                correlations.add(0.0);
-            }
-            if(b.getPhysicalOffensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getHp() > 0){
-                correlations.add(1.0);
-            }
             if(b.getPhysicalDefensive() > 0){
-                correlations.add(1.0);
-            }
-            if(b.getMagicalDefensive() > 0){
-                correlations.add(1.0);
+                result = 1.0;
+            }else {
+                if (b.getMagicalOffensive() > 0) {
+                    result = 0.0;
+                    if(a.getHp() > 0){
+                        result = 0.5 * offensiveToHpOtherDefenseWeight;
+                    }
+                }
+                if (b.getPhysicalOffensive() > 0) {
+                    result = 1.0;
+                    if(a.getHp() > 0){
+                        result = 0.5 * offensiveToHpSameDefenseWeight;
+                    }
+                }
+                if (b.getHp() > 0 || b.getMagicalDefensive() > 0) {
+                    result = 1.0;
+                }
             }
         }
         if(a.getMagicalDefensive() > 0) {
-            if (b.getMagicalOffensive() > 0) {
-                correlations.add(1.0);
-            }
-            if (b.getPhysicalOffensive() > 0) {
-                correlations.add(2.0);
-            }
-            if (b.getHp() > 0) {
-                correlations.add(1.0);
-            }
-            if (b.getPhysicalDefensive() > 0) {
-                correlations.add(1.0);
-            }
             if (b.getMagicalDefensive() > 0){
-                correlations.add(2.0);
+                result = 1.0;
+            }else{
+                if (b.getMagicalOffensive() > 0) {
+                    result = 1.0;
+                    if(a.getHp() > 0){
+                        result = 0.5 * offensiveToHpSameDefenseWeight;
+                    }
+                }
+                if (b.getPhysicalOffensive() > 0) {
+                    result = 0.0;
+                    if(a.getHp() > 0){
+                        result = 0.5 * offensiveToHpOtherDefenseWeight;
+                    }
+                }
+                if (b.getHp() > 0 || b.getPhysicalDefensive() > 0) {
+                    result = 1.0;
+                }
             }
         }
 
-        double result = 0;
-        for(Integer i=0; i<correlations.size(); i++) {
-            result += correlations.get(i);
-        }
-        result /= correlations.size();
-        System.out.println("result divide: " + result);
-
-        if(result == 0.25){
-            return Double.parseDouble(String.format("%.2f", 1.0 / (FACTOR_SIZE-correlations.size()) ) );
-        }else if(result == 0.75){
-            return Double.parseDouble(String.format("%.2f", 1 - 1.0 / (FACTOR_SIZE-correlations.size()) ) );
-        }else{
-            return result;
-        }
+        return Double.parseDouble(String.format("%.2f",result));
     }
 }

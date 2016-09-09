@@ -12,6 +12,7 @@ public class ItemCorrelationTest {
         b.setPhysicalDefensive(50);
 
         assert(ItemCorrelation.compute(a, b) == 0.33);
+        assert(ItemCorrelation.compute(b, a) == 0.33);
     }
 
     @Test
@@ -22,6 +23,7 @@ public class ItemCorrelationTest {
         b.setPhysicalDefensive(100);
 
         assert(ItemCorrelation.compute(a, b) == 0);
+        assert(ItemCorrelation.compute(b, a) == 0);
     }
 
     @Test
@@ -32,6 +34,7 @@ public class ItemCorrelationTest {
         b.setHp(800);
 
         assert(ItemCorrelation.compute(a, b) == 0.5);
+        assert(ItemCorrelation.compute(b, a) == 0.5);
     }
 
     @Test
@@ -43,6 +46,7 @@ public class ItemCorrelationTest {
         b.setMagicalDefensive(50);
 
         assert(ItemCorrelation.compute(a, b) == 0.67);
+        assert(ItemCorrelation.compute(b, a) == 0.67);
     }
 
     @Test
@@ -65,6 +69,7 @@ public class ItemCorrelationTest {
         b.setMagicalOffensive(120);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(a, b) == 1);
     }
 
     @Test
@@ -76,6 +81,7 @@ public class ItemCorrelationTest {
         b.setMagicalOffensive(50);
 
         assert(ItemCorrelation.compute(b, a) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -86,6 +92,7 @@ public class ItemCorrelationTest {
         b.setPhysicalOffensive(80);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -96,6 +103,7 @@ public class ItemCorrelationTest {
         b.setPhysicalDefensive(100);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -106,6 +114,7 @@ public class ItemCorrelationTest {
         b.setMagicalOffensive(100);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -117,6 +126,7 @@ public class ItemCorrelationTest {
         b.setHp(100);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -127,6 +137,7 @@ public class ItemCorrelationTest {
         b.setPhysicalDefensive(100);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
     @Test
@@ -138,6 +149,7 @@ public class ItemCorrelationTest {
         b.setMagicalDefensive(60);
 
         assert(ItemCorrelation.compute(a, b) == 1);
+        assert(ItemCorrelation.compute(b, a) == 1);
     }
 
 }
